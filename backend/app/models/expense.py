@@ -2,25 +2,30 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, Text, Uuid, func
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 
-class Income(Base):
-    __tablename__ = "incomes"
+class Expense(Base):
+    __tablename__ = "expenses"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("user_profiles.id"), index=True, nullable=False)
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("expense_categories.id"), index=True
+    )
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     currency: Mapped[str] = mapped_column(String(8), default="ZMW")
-    source: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
-    recurrence_period: Mapped[str | None] = mapped_column(String(32))  # monthly, weekly, semester
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    user: Mapped["UserProfile"] = relationship()
+    category: Mapped["ExpenseCategory"] = relationship(back_populates="expenses")
+
+    @property
+    def category_name(self) -> str | None:
+        # Only safe when the category was eagerly loaded (selectinload)
+        return self.category.name if self.category is not None else None
