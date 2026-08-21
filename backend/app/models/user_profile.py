@@ -1,12 +1,11 @@
-from sqlalchemy import JSON, Column, DateTime, Integer, String, func
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Uuid, func
 
 from app.core.database import Base
-import uuid
 
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(Uuid, primary_key=True)
     full_name = Column(String, nullable=False)
     university = Column(String, nullable=True)
     year_of_study = Column(Integer, nullable=True)

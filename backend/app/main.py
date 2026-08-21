@@ -19,9 +19,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
-        # Uncomment the next line if you want SQLAlchemy to create tables automatically
-        # await conn.run_sync(Base.metadata.create_all)
-        pass
+        await conn.run_sync(Base.metadata.create_all)
 
 app.include_router(user_routes.router, prefix="/api/v1/users", tags=["users"])
 

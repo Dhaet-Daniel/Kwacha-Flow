@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 
 class UserProfileBase(BaseModel):
@@ -12,7 +13,9 @@ class UserProfileBase(BaseModel):
 
 
 class UserProfileResponse(UserProfileBase):
-    id: str
+    # SQLAlchemy returns this primary key as a UUID instance. FastAPI serializes
+    # UUID values to strings in the JSON sent to the mobile client.
+    id: UUID
     created_at: datetime
     updated_at: datetime
 
