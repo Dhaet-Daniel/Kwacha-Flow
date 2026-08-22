@@ -1,16 +1,21 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Annotated, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
+
+Amount = Annotated[
+    Decimal,
+    Field(gt=0, max_digits=12, decimal_places=2),
+]
 
 
 # ---------- Income Schemas ----------
 
 
 class IncomeBase(BaseModel):
-    amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
+    amount: Amount
     currency: str = "ZMW"
     source: str = Field(..., max_length=255)
     description: Optional[str] = None
@@ -33,7 +38,7 @@ class IncomeCreate(IncomeBase):
 
 
 class IncomeUpdate(BaseModel):
-    amount: Optional[Decimal] = Field(None, gt=0, max_digits=12, decimal_places=2)
+    amount: Optional[Amount] = None
     currency: Optional[str] = None
     source: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
@@ -84,7 +89,7 @@ class ExpenseCategoryResponse(BaseModel):
 
 
 class ExpenseBase(BaseModel):
-    amount: Decimal = Field(..., gt=0, max_digits=12, decimal_places=2)
+    amount: Amount
     currency: str = "ZMW"
     category_id: int
     description: Optional[str] = None
@@ -96,7 +101,7 @@ class ExpenseCreate(ExpenseBase):
 
 
 class ExpenseUpdate(BaseModel):
-    amount: Optional[Decimal] = Field(None, gt=0, max_digits=12, decimal_places=2)
+    amount: Optional[Amount] = None
     currency: Optional[str] = None
     category_id: Optional[int] = None
     description: Optional[str] = None

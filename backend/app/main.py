@@ -8,13 +8,6 @@ from app.modules.transactions import routes as transaction_routes
 app = FastAPI(title="Student Finance API")
 
 # CORS – allow all origins during development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Optional: create tables (if they don't exist)
 @app.on_event("startup")
@@ -28,3 +21,14 @@ app.include_router(transaction_routes.router, prefix="/api/v1/transactions", tag
 @app.get("/")
 async def root():
     return {"message": "Student Finance API is running"}
+
+
+# Wrap the entire application so CORS headers are also present on error
+# responses generated outside FastAPI's normal route handling.
+app = CORSMiddleware(
+    app=app,
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1):\d+$",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
