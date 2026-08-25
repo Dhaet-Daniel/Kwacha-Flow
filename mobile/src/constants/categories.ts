@@ -31,3 +31,19 @@ export const getCategoryColor = (id: number): string =>
 
 export const getCategoryName = (id: number): string =>
   getCategory(id)?.name ?? 'Unknown'
+
+export interface IncomeSourceDef {
+  label: string
+  value: string
+}
+
+// Predefined income sources; 'other' reveals a custom input
+export const INCOME_SOURCES: IncomeSourceDef[] = [
+  { label: 'Allowance', value: 'Allowance' },
+  { label: 'Part-time job', value: 'Part-time job' },
+  { label: 'Scholarship / Bursary', value: 'Scholarship / Bursary' },
+  { label: 'Family support', value: 'Family support' },
+  { label: 'Freelance / Side hustle', value: 'Freelance / Side hustle' },
+  { label: 'Business', value: 'Business' },
+  { label: 'Other', value: '__other__' },
+]

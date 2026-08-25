@@ -5,14 +5,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  Alert,
   TextInput,
   ScrollView,
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { incomeApi, expenseApi, Income, Expense } from '../api/client'
 import { CATEGORIES } from '../constants/categories'
-import CategoryIcon from '../components/CategoryIcon'
+import { showAlert, showConfirm } from '../lib/alerts'
+import { Picker } from '@react-native-picker/picker'
 
 function extractErrorDetail(error: any): string {
   const detail = error?.response?.data?.detail
@@ -53,7 +53,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
         setCategoryId((data as Expense).category_id ?? null)
       }
     } catch (error: any) {
-      Alert.alert('Error', extractErrorDetail(error))
+      showAlert('Error', extractErrorDetail(error))
       navigation.goBack()
     } finally {
       setLoading(false)
@@ -68,32 +68,25 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
   )
 
   const handleDelete = () => {
-    Alert.alert('Delete', 'Are you sure you want to delete this transaction?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await (isExpense ? expenseApi.delete(id) : incomeApi.delete(id))
-            Alert.alert('Success', 'Transaction deleted')
-            navigation.goBack()
-          } catch (error: any) {
-            Alert.alert('Error', extractErrorDetail(error))
-          }
-        },
-      },
-    ])
+    showConfirm('Delete', 'Are you sure you want to delete this transaction?', async () => {
+      try {
+        await (isExpense ? expenseApi.delete(id) : incomeApi.delete(id))
+        showAlert('Success', 'Transaction deleted')
+        navigation.goBack()
+      } catch (error: any) {
+        showAlert('Error', extractErrorDetail(error))
+      }
+    })
   }
 
   const handleUpdate = async () => {
     const parsedAmount = parseFloat(amount)
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount')
+      showAlert('Error', 'Please enter a valid amount')
       return
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert('Error', 'Date must be in YYYY-MM-DD format')
+      showAlert('Error', 'Date must be in YYYY-MM-DD format')
       return
     }
 
@@ -119,11 +112,11 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
       } else {
         await incomeApi.update(id, payload)
       }
-      Alert.alert('Success', 'Transaction updated')
+      showAlert('Success', 'Transaction updated')
       setEditing(false)
       fetchTransaction()
     } catch (error: any) {
-      Alert.alert('Error', extractErrorDetail(error))
+      showAlert('Error', extractErrorDetail(error))
     } finally {
       setSaving(false)
     }
@@ -146,7 +139,11 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: 200 }]}
+      nestedScrollEnabled
+    >
       <View style={styles.header}>
         <Text style={styles.type}>{isExpense ? 'Expense' : 'Income'}</Text>
         <Text style={[styles.amount, { color: isExpense ? '#E74C3C' : '#27AE60' }]}>
@@ -190,20 +187,17 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
           {isExpense && (
             <>
               <Text style={styles.label}>Category</Text>
-              <View style={styles.categoryGrid}>
-                {CATEGORIES.map(cat => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.categoryButton,
-                      categoryId === cat.id && { ...styles.categoryActive, borderColor: cat.color },
-                    ]}
-                    onPress={() => setCategoryId(cat.id)}
-                  >
-                    <CategoryIcon name={cat.icon} size={20} color={cat.color} />
-                    <Text style={styles.categoryName}>{cat.name}</Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={categoryId ?? undefined}
+                  onValueChange={value => setCategoryId(value as number)}
+                  style={styles.picker}
+                  dropdownIconColor="#2C3E50"
+                >
+                  {CATEGORIES.map(cat => (
+                    <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
+                  ))}
+                </Picker>
               </View>
             </>
           )}
@@ -362,28 +356,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8ECF0',
   },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 4,
-  },
-  categoryButton: {
-    width: '30%',
-    padding: 8,
-    margin: '1.5%',
-    borderRadius: 8,
+  pickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E8ECF0',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    overflow: 'hidden',
   },
-  categoryActive: {
-    backgroundColor: '#F0F4F8',
-  },
-  categoryName: {
-    fontSize: 10,
+  picker: {
+    height: 48,
     color: '#2C3E50',
-    textAlign: 'center',
   },
   saveButton: {
     backgroundColor: '#2C3E50',

@@ -94,7 +94,7 @@ async def get_expense(db: AsyncSession, user_id: UUID, expense_id: UUID):
 async def create_expense(db: AsyncSession, user_id: UUID, data) -> Expense:
     payload = data.model_dump()
     if payload.get("category_id"):
-        category = await ExpenseCategoryRepository.get_by_id(db, payload["category_id"], user_id)
+        category = await ExpenseCategoryRepository.get_by_id(db, payload["category_id"])
         if not category:
             raise NotFoundError("Category not found")
     else:
@@ -108,7 +108,7 @@ async def update_expense(db: AsyncSession, user_id: UUID, expense_id: UUID, data
         raise NotFoundError("Expense not found")
     updates = data.model_dump(exclude_unset=True)
     if "category_id" in updates and updates["category_id"]:
-        category = await ExpenseCategoryRepository.get_by_id(db, updates["category_id"], user_id)
+        category = await ExpenseCategoryRepository.get_by_id(db, updates["category_id"])
         if not category:
             raise NotFoundError("Category not found")
     return await ExpenseRepository.update(db, expense, updates)

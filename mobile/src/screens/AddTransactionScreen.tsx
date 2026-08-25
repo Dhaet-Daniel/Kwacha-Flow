@@ -6,13 +6,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { incomeApi, expenseApi } from '../api/client'
-import { CATEGORIES } from '../constants/categories'
+import { CATEGORIES, INCOME_SOURCES } from '../constants/categories'
 import CategoryIcon from '../components/CategoryIcon'
+import { showAlert } from '../lib/alerts'
+import { Picker } from '@react-native-picker/picker'
+
+const OTHER_SOURCE = '__other__'
 
 export default function AddTransactionScreen({ navigation, route }: any) {
   const { type: initialType } = route.params || { type: 'expense' }
@@ -21,13 +26,16 @@ export default function AddTransactionScreen({ navigation, route }: any) {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState<number | null>(null)
-  const [source, setSource] = useState('')
+  const [sourceOption, setSourceOption] = useState<string>(INCOME_SOURCES[0].value)
+  const [customSource, setCustomSource] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurrencePeriod, setRecurrencePeriod] = useState<'monthly' | 'weekly' | 'semester' | null>(null)
   const [loading, setLoading] = useState(false)
 
   const isExpense = transactionType === 'expense'
+  const isOtherSource = sourceOption === OTHER_SOURCE
+  const effectiveSource = isOtherSource ? customSource.trim() : sourceOption
 
   const extractErrorDetail = (error: any): string => {
     const detail = error?.response?.data?.detail
@@ -39,28 +47,29 @@ export default function AddTransactionScreen({ navigation, route }: any) {
   }
 
   const handleSubmit = async () => {
+    console.log('Submit pressed', { amount, date, categoryId, sourceOption, isExpense })
     if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount')
+      showAlert('Error', 'Please enter a valid amount')
       return
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      Alert.alert('Error', 'Date must be in YYYY-MM-DD format')
+      showAlert('Error', 'Date must be in YYYY-MM-DD format')
       return
     }
 
     if (isExpense && !categoryId) {
-      Alert.alert('Error', 'Please select a category')
+      showAlert('Error', 'Please select a category')
       return
     }
 
-    if (!isExpense && !source.trim()) {
-      Alert.alert('Error', 'Please enter a source for income')
+    if (!isExpense && !effectiveSource) {
+      showAlert('Error', 'Please enter a source for income')
       return
     }
 
     if (!isExpense && isRecurring && !recurrencePeriod) {
-      Alert.alert('Error', 'Please choose how often this income recurs')
+      showAlert('Error', 'Please choose how often this income recurs')
       return
     }
 
@@ -73,7 +82,7 @@ export default function AddTransactionScreen({ navigation, route }: any) {
         ...(isExpense
           ? { category_id: categoryId! }
           : {
-              source: source.trim(),
+              source: effectiveSource,
               is_recurring: isRecurring,
               recurrence_period: isRecurring ? recurrencePeriod : null,
             }),
@@ -85,18 +94,26 @@ export default function AddTransactionScreen({ navigation, route }: any) {
         await incomeApi.create(payload)
       }
 
-      Alert.alert('Success', `${transactionType === 'income' ? 'Income' : 'Expense'} added successfully!`)
+      showAlert('Success', `${transactionType === 'income' ? 'Income' : 'Expense'} added successfully!`)
       navigation.goBack()
     } catch (error: any) {
-      Alert.alert('Error', extractErrorDetail(error))
+      showAlert('Error', extractErrorDetail(error))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Add {isExpense ? 'Expense' : 'Income'}</Text>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        style={styles.formScroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>Add {isExpense ? 'Expense' : 'Income'}</Text>
 
       {/* Type Toggle */}
       <View style={styles.toggleContainer}>
@@ -146,21 +163,32 @@ export default function AddTransactionScreen({ navigation, route }: any) {
       {isExpense && (
         <>
           <Text style={styles.label}>Category</Text>
-          <View style={styles.categoryGrid}>
-            {CATEGORIES.map(cat => (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryButton,
-                  categoryId === cat.id && { ...styles.categoryActive, borderColor: cat.color },
-                ]}
-                onPress={() => setCategoryId(cat.id)}
-              >
-                <CategoryIcon name={cat.icon} size={24} color={cat.color} />
-                <Text style={styles.categoryName}>{cat.name}</Text>
-              </TouchableOpacity>
-            ))}
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={categoryId ?? undefined}
+              onValueChange={value => {
+                console.log('Category selected:', value)
+                setCategoryId(value as number)
+              }}
+              style={styles.picker}
+              dropdownIconColor="#2C3E50"
+            >
+              <Picker.Item label="Select a category..." value={undefined} enabled={false} />
+              {CATEGORIES.map(cat => (
+                <Picker.Item key={cat.id} label={`${cat.name}`} value={cat.id} />
+              ))}
+            </Picker>
           </View>
+
+          {/* Compact visual confirmation of the chosen category */}
+          {categoryId != null && (
+            <View style={styles.selectedCategoryRow}>
+              <CategoryIcon name={CATEGORIES.find(c => c.id === categoryId)?.icon} size={18} color={CATEGORIES.find(c => c.id === categoryId)?.color} />
+              <Text style={styles.selectedCategoryText}>
+                {CATEGORIES.find(c => c.id === categoryId)?.name}
+              </Text>
+            </View>
+          )}
         </>
       )}
 
@@ -168,12 +196,27 @@ export default function AddTransactionScreen({ navigation, route }: any) {
       {!isExpense && (
         <>
           <Text style={styles.label}>Source</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., Allowance, Part-time job"
-            value={source}
-            onChangeText={setSource}
-          />
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={sourceOption}
+              onValueChange={value => setSourceOption(value as string)}
+              style={styles.picker}
+              dropdownIconColor="#2C3E50"
+            >
+              {INCOME_SOURCES.map(src => (
+                <Picker.Item key={src.value} label={src.label} value={src.value} />
+              ))}
+            </Picker>
+          </View>
+
+          {isOtherSource && (
+            <TextInput
+              style={[styles.input, { marginTop: 8 }]}
+              placeholder="Enter your income source"
+              value={customSource}
+              onChangeText={setCustomSource}
+            />
+          )}
 
           <View style={styles.recurringContainer}>
             <Text style={styles.label}>Recurring</Text>
@@ -202,18 +245,24 @@ export default function AddTransactionScreen({ navigation, route }: any) {
         </>
       )}
 
-      <TouchableOpacity
-        style={[styles.submitButton, loading && styles.submitDisabled]}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.submitText}>Save {isExpense ? 'Expense' : 'Income'}</Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+
+      <View style={styles.submitBar}>
+        <TouchableOpacity
+          style={[styles.submitButton, loading && styles.submitDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel={`Save ${isExpense ? 'expense' : 'income'}`}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Save {isExpense ? 'Expense' : 'Income'}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -221,10 +270,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+    position: 'relative',
   },
   content: {
     padding: 20,
-    paddingBottom: 40,
+    // Keeps the last category row clear of the fixed Save bar.
+    paddingBottom: 128,
+  },
+  formScroll: {
+    flex: 1,
   },
   title: {
     fontSize: 24,
@@ -275,29 +329,27 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8ECF0',
   },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 4,
-  },
-  categoryButton: {
-    width: '30%',
-    padding: 10,
-    margin: '1.5%',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#E8ECF0',
-    alignItems: 'center',
+  pickerContainer: {
     backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E8ECF0',
+    overflow: 'hidden',
   },
-  categoryActive: {
-    backgroundColor: '#F0F4F8',
-  },
-  categoryName: {
-    fontSize: 11,
+  picker: {
+    height: 48,
     color: '#2C3E50',
-    textAlign: 'center',
-    marginTop: 4,
+  },
+  selectedCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  selectedCategoryText: {
+    fontSize: 13,
+    color: '#2C3E50',
+    marginLeft: 6,
+    fontWeight: '500',
   },
   recurringContainer: {
     flexDirection: 'row',
@@ -331,7 +383,22 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 30,
+    minHeight: 52,
+    justifyContent: 'center',
+  },
+  submitBar: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 10,
+    backgroundColor: '#F8F9FA',
+    borderTopWidth: 1,
+    borderTopColor: '#E8ECF0',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+    elevation: 8,
   },
   submitDisabled: {
     opacity: 0.6,
