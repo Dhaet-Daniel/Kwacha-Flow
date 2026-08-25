@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
 from app.modules.users import routes as user_routes
 from app.modules.transactions import routes as transaction_routes
+from app.modules.budgets import routes as budget_routes
 
 app = FastAPI(title="Student Finance API")
 
@@ -17,6 +18,7 @@ async def startup():
 
 app.include_router(user_routes.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(transaction_routes.router, prefix="/api/v1/transactions", tags=["transactions"])
+app.include_router(budget_routes.router, prefix="/api/v1", tags=["budgets"])
 
 @app.get("/")
 async def root():
