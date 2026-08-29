@@ -9,6 +9,9 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
 import AddTransactionScreen from './src/screens/AddTransactionScreen';
 import TransactionDetailScreen from './src/screens/TransactionDetailScreen';
+import BudgetsScreen from './src/screens/BudgetsScreen';
+import CreateBudgetScreen from './src/screens/CreateBudgetScreen';
+import BudgetDetailScreen from './src/screens/BudgetDetailScreen';
 import { ActivityIndicator, View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -46,7 +49,19 @@ function MainTabs({ navigation }: any) {
           ),
         }}
       />
-      {/* Future tabs: Budget, AI insights, etc. */}
+      <Tab.Screen
+        name="Budgets"
+        component={BudgetsScreen}
+        options={{
+          title: 'Budgets',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="chart-pie" size={size} color={color} />
+          ),
+          headerRight: () => (
+            <ProfileButton onPress={() => navigation.navigate('Profile')} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -66,6 +81,18 @@ function MainStack() {
         options={({ route }: any) => ({
           title: route.params?.type === 'income' ? 'Income Details' : 'Expense Details',
         })}
+      />
+      <Stack.Screen
+        name="CreateBudget"
+        component={CreateBudgetScreen}
+        options={({ route }: any) => ({
+          title: route.params?.budgetId ? 'Edit Budget' : 'New Budget',
+        })}
+      />
+      <Stack.Screen
+        name="BudgetDetail"
+        component={BudgetDetailScreen}
+        options={{ title: 'Budget Details' }}
       />
     </Stack.Navigator>
   );

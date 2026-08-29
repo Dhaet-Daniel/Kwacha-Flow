@@ -269,6 +269,7 @@ export default function AddTransactionScreen({ navigation, route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: '#F8F9FA',
     position: 'relative',
   },
@@ -279,6 +280,7 @@ const styles = StyleSheet.create({
   },
   formScroll: {
     flex: 1,
+    minHeight: 0,
   },
   title: {
     fontSize: 24,

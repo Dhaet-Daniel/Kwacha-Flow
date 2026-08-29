@@ -57,6 +57,52 @@ export interface TransactionListResponse<T> {
   offset: number
 }
 
+export interface BudgetAllocation {
+  id: string
+  budget_id: string
+  category_id: number
+  allocated_amount: number
+}
+
+export interface Budget {
+  id: string
+  user_id: string
+  name: string
+  period: 'monthly' | 'weekly' | 'semester'
+  start_date: string
+  end_date: string
+  total_budget: number | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface BudgetCategoryDetail {
+  category_id: number
+  category_name: string
+  category_icon: string | null
+  category_color: string | null
+  allocated_amount: number
+  spent_amount: number
+  remaining: number
+  percentage_used: number
+  status: 'ok' | 'warning' | 'exceeded'
+}
+
+export interface BudgetDetail extends Budget {
+  allocations: BudgetCategoryDetail[]
+  total_spent: number
+  total_remaining: number
+  overall_percentage: number
+  days_remaining: number | null
+  daily_recommended_limit: number | null
+}
+
+export interface BudgetListResponse {
+  data: Budget[]
+  total: number
+}
+
 // ---------- Income endpoints ----------
 
 export const incomeApi = {
@@ -104,6 +150,20 @@ export const summaryApi = {
       '/transactions/summary',
       { params },
     ),
+}
+
+// ---------- Budgets ----------
+
+export const budgetApi = {
+  list: () => api.get<BudgetListResponse>('/budgets'),
+  active: () => api.get<BudgetDetail>('/budgets/active'),
+  get: (id: string) => api.get<BudgetDetail>(`/budgets/${id}`),
+  create: (data: Partial<Budget> & { allocations?: { category_id: number; allocated_amount: number }[] }) =>
+    api.post<Budget>('/budgets', data),
+  update: (id: string, data: Partial<Budget>) => api.put<Budget>(`/budgets/${id}`, data),
+  delete: (id: string) => api.delete(`/budgets/${id}`),
+  updateAllocations: (id: string, allocations: { category_id: number; allocated_amount: number }[]) =>
+    api.put(`/budgets/${id}/allocations`, allocations),
 }
 
 export default api

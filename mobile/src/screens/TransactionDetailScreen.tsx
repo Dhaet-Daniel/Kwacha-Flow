@@ -268,6 +268,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: '#F8F9FA',
   },
   content: {
