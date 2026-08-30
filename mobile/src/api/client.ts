@@ -166,4 +166,46 @@ export const budgetApi = {
     api.put(`/budgets/${id}/allocations`, allocations),
 }
 
+// ---------- Dashboard ----------
+
+export interface BudgetHealthItem {
+  category_id: number
+  category_name: string
+  allocated: number
+  spent: number
+  remaining: number
+  percentage: number
+  status: 'ok' | 'warning' | 'exceeded'
+}
+
+export interface RecentTransactionItem {
+  id: string
+  type: 'income' | 'expense'
+  amount: number
+  category: string
+  description: string
+  date: string
+}
+
+export interface InsightItem {
+  id: string
+  type: string
+  message: string
+  created_at: string
+}
+
+export interface DashboardData {
+  balance: number
+  total_income: number
+  total_expenses: number
+  savings_total: number
+  budget_health: BudgetHealthItem[]
+  recent_transactions: RecentTransactionItem[]
+  insights: InsightItem[]
+}
+
+export const dashboardApi = {
+  get: () => api.get<DashboardData>('/dashboard'),
+}
+
 export default api

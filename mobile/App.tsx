@@ -7,6 +7,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import TransactionsScreen from './src/screens/TransactionsScreen';
+import DashboardScreen from './src/screens/DashboardScreen';
 import AddTransactionScreen from './src/screens/AddTransactionScreen';
 import TransactionDetailScreen from './src/screens/TransactionDetailScreen';
 import BudgetsScreen from './src/screens/BudgetsScreen';
@@ -37,10 +38,23 @@ function MainTabs({ navigation }: any) {
       }}
     >
       <Tab.Screen
+        name="Home"
+        component={DashboardScreen}
+        options={{
+          title: 'Kwacha Flow',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="view-dashboard" size={size} color={color} />
+          ),
+          headerRight: () => (
+            <ProfileButton onPress={() => navigation.navigate('Profile')} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Transactions"
         component={TransactionsScreen}
         options={{
-          title: 'Kwacha Flow',
+          title: 'Transactions',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="swap-vertical" size={size} color={color} />
           ),
