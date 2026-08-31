@@ -13,6 +13,10 @@ import TransactionDetailScreen from './src/screens/TransactionDetailScreen';
 import BudgetsScreen from './src/screens/BudgetsScreen';
 import CreateBudgetScreen from './src/screens/CreateBudgetScreen';
 import BudgetDetailScreen from './src/screens/BudgetDetailScreen';
+import BudgetAllocationsScreen from './src/screens/BudgetAllocationsScreen';
+import SavingsScreen from './src/screens/SavingsScreen';
+import CreateSavingsGoalScreen from './src/screens/CreateSavingsGoalScreen';
+import SavingsGoalDetailScreen from './src/screens/SavingsGoalDetailScreen';
 import { ActivityIndicator, View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -76,6 +80,19 @@ function MainTabs({ navigation }: any) {
           ),
         }}
       />
+      <Tab.Screen
+        name="Savings"
+        component={SavingsScreen}
+        options={{
+          title: 'Savings',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="piggy-bank" size={size} color={color} />
+          ),
+          headerRight: () => (
+            <ProfileButton onPress={() => navigation.navigate('Profile')} />
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 }
@@ -107,6 +124,25 @@ function MainStack() {
         name="BudgetDetail"
         component={BudgetDetailScreen}
         options={{ title: 'Budget Details' }}
+      />
+      <Stack.Screen
+        name="BudgetAllocations"
+        component={BudgetAllocationsScreen}
+        options={({ route }: any) => ({
+          title: route.params?.budgetId ? 'Update Allocations' : 'Budget Allocations',
+        })}
+      />
+      <Stack.Screen
+        name="CreateSavingsGoal"
+        component={CreateSavingsGoalScreen}
+        options={({ route }: any) => ({
+          title: route.params?.goalId ? 'Edit Goal' : 'New Goal',
+        })}
+      />
+      <Stack.Screen
+        name="SavingsGoalDetail"
+        component={SavingsGoalDetailScreen}
+        options={{ title: 'Goal Details' }}
       />
     </Stack.Navigator>
   );

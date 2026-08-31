@@ -2,12 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import engine, Base
+from app.core.exceptions import register_exception_handlers
 from app.modules.users import routes as user_routes
 from app.modules.transactions import routes as transaction_routes
 from app.modules.budgets import routes as budget_routes
 from app.modules.dashboard import routes as dashboard_routes
+from app.modules.savings import routes as savings_routes
 
 app = FastAPI(title="Student Finance API")
+
+register_exception_handlers(app)
 
 # CORS – allow all origins during development
 
@@ -21,6 +25,7 @@ app.include_router(user_routes.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(transaction_routes.router, prefix="/api/v1/transactions", tags=["transactions"])
 app.include_router(budget_routes.router, prefix="/api/v1", tags=["budgets"])
 app.include_router(dashboard_routes.router, prefix="/api/v1", tags=["dashboard"])
+app.include_router(savings_routes.router, prefix="/api/v1", tags=["savings"])
 
 @app.get("/")
 async def root():

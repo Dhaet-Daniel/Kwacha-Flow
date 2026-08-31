@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -6,16 +6,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
 import { budgetApi } from '../api/client'
-import { CATEGORIES } from '../constants/categories'
-import CategoryIcon from '../components/CategoryIcon'
 import { showAlert } from '../lib/alerts'
 
 const FormContainer = Platform.OS === 'web' ? View : KeyboardAvoidingView
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export default function CreateBudgetScreen({ navigation, route }: any) {
   const { budgetId } = route.params || {}
@@ -28,7 +27,6 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
     d.setMonth(d.getMonth() + 1)
     return d.toISOString().split('T')[0]
   })
-  const [allocations, setAllocations] = useState<{ [key: number]: string }>({})
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -43,11 +41,6 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
         setPeriod(data.period)
         setStartDate(data.start_date)
         setEndDate(data.end_date)
-        const allocMap: { [key: number]: string } = {}
-        data.allocations.forEach(a => {
-          allocMap[a.category_id] = String(a.allocated_amount)
-        })
-        setAllocations(allocMap)
       } catch (e: any) {
         console.error('Failed to load budget:', e?.message ?? e)
         showAlert('Error', 'Failed to load budget')
@@ -58,71 +51,21 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [budgetId])
 
-  const handleAllocationChange = (categoryId: number, value: string) => {
-    setAllocations({ ...allocations, [categoryId]: value })
-  }
+  const isValid =
+    !!name.trim() &&
+    DATE_RE.test(startDate) &&
+    DATE_RE.test(endDate) &&
+    new Date(startDate) <= new Date(endDate)
 
-  const extractErrorDetail = (error: any): string => {
-    const detail = error?.response?.data?.detail
-    if (typeof detail === 'string') return detail
-    if (Array.isArray(detail)) {
-      return detail.map((d: any) => `${d.loc?.slice(1).join('.')}: ${d.msg}`).join('\n')
-    }
-    return error?.message || 'Failed to save budget'
-  }
-
-  const handleSubmit = async () => {
-    if (!name.trim()) {
-      showAlert('Error', 'Please enter a budget name')
-      return
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-      showAlert('Error', 'Dates must be in YYYY-MM-DD format')
-      return
-    }
-    if (new Date(startDate) > new Date(endDate)) {
-      showAlert('Error', 'Start date must be before end date')
-      return
-    }
-
-    const allocationsList = CATEGORIES.map(cat => ({
-      category_id: cat.id,
-      allocated_amount: parseFloat(allocations[cat.id] || '0') || 0,
-    })).filter(a => a.allocated_amount > 0)
-
-    if (allocationsList.length === 0) {
-      showAlert('Error', 'Please allocate at least one category with a positive amount')
-      return
-    }
-
-    setLoading(true)
-    try {
-      if (isEditing) {
-        await budgetApi.update(budgetId, {
-          name: name.trim(),
-          period,
-          start_date: startDate,
-          end_date: endDate,
-        })
-        await budgetApi.updateAllocations(budgetId, allocationsList)
-        showAlert('Success', 'Budget updated')
-      } else {
-        await budgetApi.create({
-          name: name.trim(),
-          period,
-          start_date: startDate,
-          end_date: endDate,
-          allocations: allocationsList,
-          is_active: true,
-        })
-        showAlert('Success', 'Budget created')
-      }
-      navigation.goBack()
-    } catch (e: any) {
-      showAlert('Error', extractErrorDetail(e))
-    } finally {
-      setLoading(false)
-    }
+  const handleNext = () => {
+    if (!isValid) return
+    navigation.navigate('BudgetAllocations', {
+      budgetId,
+      name: name.trim(),
+      period,
+      start_date: startDate,
+      end_date: endDate,
+    })
   }
 
   return (
@@ -135,7 +78,14 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.stepBadge}>
+          <Text style={styles.stepBadgeText}>Step 1 of 2 · Budget settings</Text>
+        </View>
+
         <Text style={styles.title}>{isEditing ? 'Edit Budget' : 'Create Budget'}</Text>
+        <Text style={styles.subtitle}>
+          First, tell us the basics about this budget. Amounts come next.
+        </Text>
 
         <Text style={styles.label}>Budget Name</Text>
         <TextInput
@@ -175,42 +125,20 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
           value={endDate}
           onChangeText={setEndDate}
         />
-
-        <Text style={styles.sectionTitle}>Category Allocations</Text>
-        <Text style={styles.sectionSub}>Enter amounts for each category you want to budget</Text>
-
-        {CATEGORIES.map(cat => (
-          <View key={cat.id} style={styles.allocationRow}>
-            <View style={styles.categoryNameRow}>
-              <CategoryIcon name={cat.icon} size={18} color={cat.color} />
-              <Text style={styles.categoryName}>{cat.name}</Text>
-            </View>
-            <TextInput
-              style={styles.allocationInput}
-              placeholder="0.00"
-              keyboardType="numeric"
-              value={allocations[cat.id] || ''}
-              onChangeText={val => handleAllocationChange(cat.id, val)}
-            />
-          </View>
-        ))}
       </ScrollView>
 
       <View style={styles.submitBar}>
         <TouchableOpacity
-          style={[styles.submitButton, loading && styles.submitDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
+          style={[styles.submitButton, !isValid && styles.submitDisabled]}
+          onPress={handleNext}
+          disabled={!isValid}
           accessibilityRole="button"
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.submitText}>
-              {isEditing ? 'Update' : 'Create'} Budget
-            </Text>
-          )}
+          <Text style={styles.submitText}>Next: Allocations →</Text>
         </TouchableOpacity>
+        <Text style={styles.submitHint}>
+          {isValid ? '' : 'Fill in the name and valid dates to continue.'}
+        </Text>
       </View>
     </FormContainer>
   )
@@ -231,11 +159,29 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 128,
   },
+  stepBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  stepBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2C6E9B',
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: '#2C3E50',
-    marginBottom: 20,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#7F8C8D',
+    marginTop: 6,
+    marginBottom: 8,
   },
   label: {
     fontSize: 14,
@@ -276,44 +222,6 @@ const styles = StyleSheet.create({
   periodTextActive: {
     fontWeight: '600',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginTop: 24,
-    marginBottom: 4,
-  },
-  sectionSub: {
-    fontSize: 13,
-    color: '#7F8C8D',
-    marginBottom: 12,
-  },
-  allocationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 4,
-  },
-  categoryNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  categoryName: {
-    fontSize: 15,
-    color: '#2C3E50',
-    marginLeft: 8,
-  },
-  allocationInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 8,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: '#E8ECF0',
-    width: 100,
-    textAlign: 'right',
-  },
   submitButton: {
     backgroundColor: '#2C3E50',
     padding: 16,
@@ -337,11 +245,18 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   submitDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   submitText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  submitHint: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#7F8C8D',
+    marginTop: 6,
+    minHeight: 16,
   },
 })

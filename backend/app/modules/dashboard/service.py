@@ -9,6 +9,7 @@ from app.models.expense import Expense
 from app.models.budget import Budget
 from app.models.budget_category import BudgetCategory
 from app.models.expense_category import ExpenseCategory
+from app.models.savings_goal import SavingsGoal
 
 # NOTE: savings_goal and financial_insight tables do not exist yet in the
 # database. They arrive in later tutorial steps; until then their aggregates
@@ -44,8 +45,13 @@ async def get_dashboard_data(db: AsyncSession, user_id: str) -> dict:
 
     balance = total_income - total_expenses
 
-    # 2. Savings total (requires savings_goal table - not implemented yet)
-    savings_total = Decimal(0)
+    # 2. Savings total (sum of current amounts across the user's goals)
+    savings_result = await db.execute(
+        select(func.coalesce(func.sum(SavingsGoal.current_amount), 0)).where(
+            SavingsGoal.user_id == user_id
+        )
+    )
+    savings_total = savings_result.scalar() or Decimal(0)
 
     # 3. Budget health (active budget)
     budget_health: list[dict] = []

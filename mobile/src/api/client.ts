@@ -208,4 +208,71 @@ export const dashboardApi = {
   get: () => api.get<DashboardData>('/dashboard'),
 }
 
+// ---------- Savings ----------
+
+export interface SavingsGoal {
+  id: string
+  user_id: string
+  name: string
+  target_amount: number
+  current_amount: number
+  target_date: string
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SavingsGoalDetail extends SavingsGoal {
+  remaining: number
+  progress_percentage: number
+  months_remaining: number
+  required_monthly_saving: number
+}
+
+export interface SavingsTransaction {
+  id: string
+  goal_id: string
+  user_id: string
+  amount: number
+  date: string
+  note?: string | null
+  created_at: string
+}
+
+export interface SavingsGoalInput {
+  name: string
+  target_amount: number
+  target_date: string
+  notes?: string | null
+}
+
+export interface SavingsTransactionInput {
+  amount: number
+  date: string
+  note?: string | null
+}
+
+export interface SavingsGoalListResponse {
+  data: SavingsGoal[]
+  total: number
+}
+
+export interface SavingsTransactionListResponse {
+  data: SavingsTransaction[]
+  total: number
+}
+
+export const savingsApi = {
+  list: () => api.get<SavingsGoalListResponse>('/savings/goals'),
+  create: (data: SavingsGoalInput) => api.post<SavingsGoal>('/savings/goals', data),
+  get: (id: string) => api.get<SavingsGoalDetail>(`/savings/goals/${id}`),
+  update: (id: string, data: Partial<SavingsGoalInput>) =>
+    api.put<SavingsGoal>(`/savings/goals/${id}`, data),
+  delete: (id: string) => api.delete(`/savings/goals/${id}`),
+  addContribution: (id: string, data: SavingsTransactionInput) =>
+    api.post<SavingsTransaction>(`/savings/goals/${id}/contributions`, data),
+  getContributions: (id: string) =>
+    api.get<SavingsTransactionListResponse>(`/savings/goals/${id}/contributions`),
+}
+
 export default api
