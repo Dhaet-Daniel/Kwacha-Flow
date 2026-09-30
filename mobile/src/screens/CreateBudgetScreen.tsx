@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native'
 import { budgetApi } from '../api/client'
+import DateField from '../components/DateField'
 import { showAlert } from '../lib/alerts'
 
 const FormContainer = Platform.OS === 'web' ? View : KeyboardAvoidingView
@@ -29,6 +30,7 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
   })
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [touched, setTouched] = useState({ name: false, start: false, end: false })
 
   useEffect(() => {
     if (!budgetId) return
@@ -51,11 +53,16 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [budgetId])
 
+  const nameError = !name.trim() ? 'Enter a budget name.' : ''
+  const startError = !DATE_RE.test(startDate) ? 'Pick a start date.' : ''
+  const endError = !DATE_RE.test(endDate)
+    ? 'Pick an end date.'
+    : new Date(startDate) > new Date(endDate)
+    ? 'End date must be after the start date.'
+    : ''
+
   const isValid =
-    !!name.trim() &&
-    DATE_RE.test(startDate) &&
-    DATE_RE.test(endDate) &&
-    new Date(startDate) <= new Date(endDate)
+    !!name.trim() && DATE_RE.test(startDate) && DATE_RE.test(endDate) && !endError
 
   const handleNext = () => {
     if (!isValid) return
@@ -89,11 +96,13 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
 
         <Text style={styles.label}>Budget Name</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, touched.name && !!nameError && styles.inputError]}
           placeholder="e.g., March 2026"
           value={name}
           onChangeText={setName}
+          onBlur={() => setTouched(t => ({ ...t, name: true }))}
         />
+        {touched.name && !!nameError && <Text style={styles.errorText}>{nameError}</Text>}
 
         <Text style={styles.label}>Period</Text>
         <View style={styles.periodContainer}>
@@ -111,20 +120,20 @@ export default function CreateBudgetScreen({ navigation, route }: any) {
         </View>
 
         <Text style={styles.label}>Start Date</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
+        <DateField
           value={startDate}
           onChangeText={setStartDate}
+          error={touched.start && !!startError}
         />
+        {touched.start && !!startError && <Text style={styles.errorText}>{startError}</Text>}
 
         <Text style={styles.label}>End Date</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
+        <DateField
           value={endDate}
           onChangeText={setEndDate}
+          error={touched.end && !!endError}
         />
+        {touched.end && !!endError && <Text style={styles.errorText}>{endError}</Text>}
       </ScrollView>
 
       <View style={styles.submitBar}>
@@ -197,6 +206,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#E8ECF0',
+  },
+  inputError: {
+    borderColor: '#E74C3C',
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 12,
+    marginTop: 6,
   },
   periodContainer: {
     flexDirection: 'row',

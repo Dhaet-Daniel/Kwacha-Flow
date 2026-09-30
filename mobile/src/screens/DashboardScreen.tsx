@@ -9,12 +9,14 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
-import { dashboardApi, DashboardData } from '../api/client'
+import { dashboardApi, demoApi, DashboardData } from '../api/client'
+import { showAlert, showConfirm } from '../lib/alerts'
 
 export default function DashboardScreen({ navigation }: any) {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [seeding, setSeeding] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const fetchDashboard = async () => {
@@ -43,6 +45,27 @@ export default function DashboardScreen({ navigation }: any) {
     fetchDashboard()
   }
 
+  const handleSeed = () => {
+    if (seeding) return
+    showConfirm(
+      'Seed demo data',
+      'This adds a sample income, expenses, a September budget and a savings goal to your account. Continue?',
+      async () => {
+        setSeeding(true)
+        try {
+          await demoApi.seed()
+          showAlert('Success', 'Demo data created. Explore away!')
+          setLoading(true)
+          await fetchDashboard()
+        } catch (e: any) {
+          showAlert('Error', e?.response?.data?.detail ?? 'Could not seed demo data')
+        } finally {
+          setSeeding(false)
+        }
+      }
+    )
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ok':
@@ -55,6 +78,29 @@ export default function DashboardScreen({ navigation }: any) {
         return '#7F8C8D'
     }
   }
+
+  const setupSteps = data
+    ? [
+        {
+          key: 'income',
+          label: 'Record your income',
+          sub: 'Add your allowance, salary or any money in.',
+          done: data.total_income > 0,
+        },
+        {
+          key: 'budget',
+          label: 'Set up a budget',
+          sub: 'Plan how much to spend per category this month.',
+          done: data.budget_health.length > 0,
+        },
+        {
+          key: 'savings',
+          label: 'Create a savings goal',
+          sub: 'Target something you really want.',
+          done: data.savings_goals_count > 0,
+        },
+      ]
+    : []
 
   if (loading) {
     return (
@@ -81,6 +127,8 @@ export default function DashboardScreen({ navigation }: any) {
     )
   }
 
+  const allSet = setupSteps.every(step => step.done)
+
   return (
     <ScrollView
       style={styles.container}
@@ -89,7 +137,62 @@ export default function DashboardScreen({ navigation }: any) {
     >
       <Text style={styles.welcome}>Welcome back! 👋</Text>
 
-      <View style={styles.balanceCard}>
+      {/* Setup checklist */}
+      {!allSet && (
+        <View style={styles.checklistCard}>
+          <Text style={styles.checklistTitle}>Get started</Text>
+          {setupSteps.map(step =>
+            step.done ? (
+              <View key={step.key} style={styles.checklistRow}>
+                <Text style={styles.checkDone}>✓</Text>
+                <View style={styles.checklistInfo}>
+                  <Text style={styles.checklistLabelDone}>{step.label}</Text>
+                  <Text style={styles.checklistSubDone}>{step.sub}</Text>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity
+                key={step.key}
+                style={styles.checklistRow}
+                onPress={() => {
+                  if (step.key === 'income') navigation.navigate('AddTransaction', { type: 'income' })
+                  if (step.key === 'budget') navigation.navigate('CreateBudget')
+                  if (step.key === 'savings') navigation.navigate('CreateSavingsGoal')
+                }}
+              >
+                <View style={styles.checkCircle}>
+                  <Text style={styles.checkCircleText}>
+                    {setupSteps.filter(s => s.done || s.key === step.key).length}
+                  </Text>
+                </View>
+                <View style={styles.checklistInfo}>
+                  <Text style={styles.checklistLabel}>{step.label}</Text>
+                  <Text style={styles.checklistSub}>{step.sub}</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            )
+          )}
+          {data.total_income === 0 && (
+            <TouchableOpacity
+              style={[styles.seedButton, seeding && styles.submitDisabled]}
+              onPress={handleSeed}
+              disabled={seeding}
+            >
+              <Text style={styles.seedButtonText}>
+                {seeding ? 'Seeding…' : '✨ Skip the typing — load demo data'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {/* Balance card – tap to open transactions */}
+      <TouchableOpacity
+        style={styles.balanceCard}
+        onPress={() => navigation.navigate('Transactions')}
+        activeOpacity={0.85}
+      >
         <Text style={styles.balanceLabel}>Available Balance</Text>
         <Text style={styles.balanceAmount}>K{data.balance.toFixed(2)}</Text>
         <View style={styles.balanceRow}>
@@ -105,20 +208,32 @@ export default function DashboardScreen({ navigation }: any) {
               -K{data.total_expenses.toFixed(2)}
             </Text>
           </View>
-          <View>
+          <TouchableOpacity onPress={() => navigation.navigate('Savings')}>
             <Text style={styles.balanceRowLabel}>Savings</Text>
             <Text style={[styles.balanceRowValue, { color: '#3498DB' }]}>
               K{data.savings_total.toFixed(2)}
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
-      </View>
+      </TouchableOpacity>
 
       {data.budget_health.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Budget Health</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Budget Health</Text>
+            {data.active_budget_id && (
+              <TouchableOpacity onPress={() => navigation.navigate('BudgetDetail', { id: data.active_budget_id })}>
+                <Text style={styles.seeAll}>View budget</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           {data.budget_health.map(cat => (
-            <View key={cat.category_id} style={styles.budgetItem}>
+            <TouchableOpacity
+              key={cat.category_id}
+              style={styles.budgetItem}
+              disabled={!data.active_budget_id}
+              onPress={() => navigation.navigate('BudgetDetail', { id: data.active_budget_id })}
+            >
               <View style={styles.budgetHeader}>
                 <Text style={styles.budgetName}>{cat.category_name}</Text>
                 <Text style={styles.budgetAmounts}>
@@ -139,7 +254,7 @@ export default function DashboardScreen({ navigation }: any) {
               <Text style={styles.budgetPercent}>
                 {cat.percentage.toFixed(1)}% used • Remaining: K{cat.remaining.toFixed(2)}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -153,7 +268,11 @@ export default function DashboardScreen({ navigation }: any) {
             </TouchableOpacity>
           </View>
           {data.recent_transactions.map(tx => (
-            <View key={tx.id} style={styles.transactionItem}>
+            <TouchableOpacity
+              key={tx.id}
+              style={styles.transactionItem}
+              onPress={() => navigation.navigate('TransactionDetail', { id: tx.id, type: tx.type })}
+            >
               <View style={styles.transactionInfo}>
                 <Text style={styles.transactionCategory}>{tx.category}</Text>
                 <Text style={styles.transactionDesc}>
@@ -171,7 +290,7 @@ export default function DashboardScreen({ navigation }: any) {
               >
                 {tx.type === 'income' ? '+' : '-'}K{tx.amount.toFixed(2)}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -214,6 +333,92 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2C3E50',
     marginBottom: 16,
+  },
+  checklistCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E8ECF0',
+  },
+  checklistTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2C3E50',
+    marginBottom: 12,
+  },
+  checklistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  checklistInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  checklistLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2C3E50',
+  },
+  checklistSub: {
+    fontSize: 13,
+    color: '#7F8C8D',
+  },
+  checklistLabelDone: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#27AE60',
+  },
+  checklistSubDone: {
+    fontSize: 13,
+    color: '#A4B0BE',
+  },
+  checkDone: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#27AE60',
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 24,
+    fontSize: 14,
+    fontWeight: '700',
+    overflow: 'hidden',
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#3498DB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkCircleText: {
+    color: '#3498DB',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chevron: {
+    fontSize: 22,
+    color: '#A4B0BE',
+  },
+  seedButton: {
+    backgroundColor: '#F0F4F8',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  seedButtonText: {
+    color: '#2C3E50',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  submitDisabled: {
+    opacity: 0.6,
   },
   balanceCard: {
     backgroundColor: '#2C3E50',

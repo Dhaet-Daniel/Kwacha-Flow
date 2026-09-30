@@ -84,6 +84,15 @@ export default function SavingsGoalDetailScreen({ route, navigation }: any) {
         </Text>
       </View>
 
+      {goal.progress_percentage >= 100 && (
+        <View style={styles.milestoneBanner}>
+          <Text style={styles.milestoneTitle}>🎉 Goal complete!</Text>
+          <Text style={styles.milestoneText}>
+            You reached {goal.progress_percentage.toFixed(0)}% of your target. Way to go!
+          </Text>
+        </View>
+      )}
+
       <View style={styles.progressCard}>
         <Text style={styles.progressLabel}>Progress</Text>
         <Text style={styles.progressPercent}>{goal.progress_percentage.toFixed(1)}%</Text>
@@ -182,6 +191,16 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 22, fontWeight: '700', color: '#2C3E50' },
   targetDate: { fontSize: 14, color: '#7F8C8D', marginTop: 4 },
+  milestoneBanner: {
+    backgroundColor: '#F0FFF4',
+    borderWidth: 1,
+    borderColor: '#2ED573',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  milestoneTitle: { fontSize: 16, fontWeight: '700', color: '#218C53' },
+  milestoneText: { fontSize: 13, color: '#218C53', marginTop: 4 },
   progressCard: {
     backgroundColor: '#fff',
     borderRadius: 12,

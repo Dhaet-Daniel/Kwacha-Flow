@@ -19,6 +19,7 @@ import CreateSavingsGoalScreen from './src/screens/CreateSavingsGoalScreen';
 import SavingsGoalDetailScreen from './src/screens/SavingsGoalDetailScreen';
 import { ActivityIndicator, View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -181,6 +182,7 @@ export default function App() {
     <AuthProvider>
       <NavigationContainer>
         <AppNavigator />
+        <Toast />
       </NavigationContainer>
     </AuthProvider>
   );

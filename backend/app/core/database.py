@@ -8,6 +8,8 @@ DATABASE_URL = settings.database_url.replace("postgresql://", "postgresql+asyncp
 engine = create_async_engine(
     DATABASE_URL,
     echo=True,
+    pool_pre_ping=True,
+    pool_recycle=300,
     connect_args={"ssl": "require", "statement_cache_size": 0},
 )
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -40,3 +40,5 @@ class DashboardResponse(BaseModel):
     budget_health: List[BudgetHealthItem]
     recent_transactions: List[RecentTransactionItem]
     insights: List[InsightItem]
+    active_budget_id: Optional[UUID] = None
+    savings_goals_count: int = 0

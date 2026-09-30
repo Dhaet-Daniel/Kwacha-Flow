@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { savingsApi } from '../api/client'
+import DateField from '../components/DateField'
 import { showAlert } from '../lib/alerts'
 
 export default function CreateSavingsGoalScreen({ navigation, route }: any) {
@@ -20,6 +21,7 @@ export default function CreateSavingsGoalScreen({ navigation, route }: any) {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [touched, setTouched] = useState({ name: false, amount: false, date: false })
 
   useEffect(() => {
     if (goalId) {
@@ -42,17 +44,17 @@ export default function CreateSavingsGoalScreen({ navigation, route }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goalId])
 
+  const nameError = !name.trim() ? 'Enter a goal name.' : ''
+  const amountError =
+    !targetAmount || isNaN(parseFloat(targetAmount)) || parseFloat(targetAmount) <= 0
+      ? 'Enter a target amount above 0.'
+      : ''
+  const dateError = !targetDate ? 'Pick a target date.' : ''
+
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      showAlert('Error', 'Please enter a goal name')
-      return
-    }
-    if (!targetAmount || parseFloat(targetAmount) <= 0) {
-      showAlert('Error', 'Please enter a valid target amount')
-      return
-    }
-    if (!targetDate) {
-      showAlert('Error', 'Please enter a target date')
+    if (nameError || amountError || dateError) {
+      setTouched({ name: true, amount: true, date: true })
+      showAlert('Error', 'Please fix the highlighted fields')
       return
     }
 
@@ -87,28 +89,32 @@ export default function CreateSavingsGoalScreen({ navigation, route }: any) {
 
       <Text style={styles.label}>Goal Name</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, touched.name && !!nameError && styles.inputError]}
         placeholder="e.g., Laptop Fund"
         value={name}
         onChangeText={setName}
+        onBlur={() => setTouched(t => ({ ...t, name: true }))}
       />
+      {touched.name && !!nameError && <Text style={styles.errorText}>{nameError}</Text>}
 
       <Text style={styles.label}>Target Amount (ZMW)</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, touched.amount && !!amountError && styles.inputError]}
         placeholder="0.00"
         keyboardType="numeric"
         value={targetAmount}
         onChangeText={setTargetAmount}
+        onBlur={() => setTouched(t => ({ ...t, amount: true }))}
       />
+      {touched.amount && !!amountError && <Text style={styles.errorText}>{amountError}</Text>}
 
       <Text style={styles.label}>Target Date</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="YYYY-MM-DD"
+      <DateField
         value={targetDate}
         onChangeText={setTargetDate}
+        error={touched.date && !!dateError}
       />
+      {touched.date && !!dateError && <Text style={styles.errorText}>{dateError}</Text>}
 
       <Text style={styles.label}>Notes (Optional)</Text>
       <TextInput
@@ -155,6 +161,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#E8ECF0',
+  },
+  inputError: {
+    borderColor: '#E74C3C',
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 12,
+    marginTop: 6,
   },
   textArea: { height: 100, textAlignVertical: 'top' },
   submitButton: {

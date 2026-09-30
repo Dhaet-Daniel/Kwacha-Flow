@@ -13,6 +13,7 @@ import { incomeApi, expenseApi, Income, Expense } from '../api/client'
 import { CATEGORIES } from '../constants/categories'
 import { showAlert, showConfirm } from '../lib/alerts'
 import { Picker } from '@react-native-picker/picker'
+import DateField from '../components/DateField'
 
 function extractErrorDetail(error: any): string {
   const detail = error?.response?.data?.detail
@@ -169,12 +170,7 @@ export default function TransactionDetailScreen({ route, navigation }: any) {
           )}
 
           <Text style={styles.label}>Date</Text>
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-          />
+          <DateField value={date} onChangeText={setDate} />
 
           <Text style={styles.label}>Description</Text>
           <TextInput

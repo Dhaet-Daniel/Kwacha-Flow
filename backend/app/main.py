@@ -8,6 +8,7 @@ from app.modules.transactions import routes as transaction_routes
 from app.modules.budgets import routes as budget_routes
 from app.modules.dashboard import routes as dashboard_routes
 from app.modules.savings import routes as savings_routes
+from app.modules.demo import routes as demo_routes
 
 app = FastAPI(title="Student Finance API")
 
@@ -26,6 +27,7 @@ app.include_router(transaction_routes.router, prefix="/api/v1/transactions", tag
 app.include_router(budget_routes.router, prefix="/api/v1", tags=["budgets"])
 app.include_router(dashboard_routes.router, prefix="/api/v1", tags=["dashboard"])
 app.include_router(savings_routes.router, prefix="/api/v1", tags=["savings"])
+app.include_router(demo_routes.router, prefix="/api/v1", tags=["demo"])
 
 @app.get("/")
 async def root():

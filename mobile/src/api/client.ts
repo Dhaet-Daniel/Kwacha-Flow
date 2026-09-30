@@ -1,8 +1,16 @@
 import axios from 'axios'
+import { Platform } from 'react-native'
 import { supabase } from '../lib/supabase'
 
+// Android emulators reach the host machine's loopback via 10.0.2.2.
+// Web and iOS keep using EXPO_PUBLIC_API_URL (localhost).
+const API_URL =
+  Platform.OS === 'android'
+    ? process.env.EXPO_PUBLIC_API_URL_ANDROID || 'http://10.0.2.2:8000/api/v1'
+    : process.env.EXPO_PUBLIC_API_URL
+
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: API_URL,
 })
 
 api.interceptors.request.use(async (config) => {
@@ -202,10 +210,16 @@ export interface DashboardData {
   budget_health: BudgetHealthItem[]
   recent_transactions: RecentTransactionItem[]
   insights: InsightItem[]
+  active_budget_id: string | null
+  savings_goals_count: number
 }
 
 export const dashboardApi = {
   get: () => api.get<DashboardData>('/dashboard'),
+}
+
+export const demoApi = {
+  seed: () => api.post('/demo/seed'),
 }
 
 // ---------- Savings ----------

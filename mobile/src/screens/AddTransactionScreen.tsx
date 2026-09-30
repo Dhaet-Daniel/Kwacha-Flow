@@ -14,6 +14,7 @@ import {
 import { incomeApi, expenseApi } from '../api/client'
 import { CATEGORIES, INCOME_SOURCES } from '../constants/categories'
 import CategoryIcon from '../components/CategoryIcon'
+import DateField from '../components/DateField'
 import { showAlert } from '../lib/alerts'
 import { Picker } from '@react-native-picker/picker'
 
@@ -143,12 +144,7 @@ export default function AddTransactionScreen({ navigation, route }: any) {
 
       {/* Date */}
       <Text style={styles.label}>Date</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="YYYY-MM-DD"
-        value={date}
-        onChangeText={setDate}
-      />
+      <DateField value={date} onChangeText={setDate} />
 
       {/* Description */}
       <Text style={styles.label}>Description (Optional)</Text>

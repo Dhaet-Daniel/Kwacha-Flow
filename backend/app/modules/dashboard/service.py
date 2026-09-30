@@ -53,6 +53,11 @@ async def get_dashboard_data(db: AsyncSession, user_id: str) -> dict:
     )
     savings_total = savings_result.scalar() or Decimal(0)
 
+    goals_count_result = await db.execute(
+        select(func.count()).select_from(SavingsGoal).where(SavingsGoal.user_id == user_id)
+    )
+    savings_goals_count = goals_count_result.scalar() or 0
+
     # 3. Budget health (active budget)
     budget_health: list[dict] = []
     budget_result = await db.execute(
@@ -64,6 +69,7 @@ async def get_dashboard_data(db: AsyncSession, user_id: str) -> dict:
         )
     )
     active_budget = budget_result.scalar_one_or_none()
+    active_budget_id = active_budget.id if active_budget else None
 
     if active_budget:
         allocations_result = await db.execute(
@@ -160,4 +166,6 @@ async def get_dashboard_data(db: AsyncSession, user_id: str) -> dict:
         "budget_health": budget_health,
         "recent_transactions": recent,
         "insights": insights,
+        "active_budget_id": str(active_budget_id) if active_budget_id else None,
+        "savings_goals_count": savings_goals_count,
     }
