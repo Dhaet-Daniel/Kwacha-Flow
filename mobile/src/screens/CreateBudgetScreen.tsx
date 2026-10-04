@@ -240,12 +240,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#3498DB',
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
+    shadowColor: '#2E86DE',
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   submitBar: {
     position: 'absolute',

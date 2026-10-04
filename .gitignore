@@ -93,3 +93,6 @@ yarn-error.*
 # generated native folders
 /mobile/ios
 /mobile/android
+
+# Uploaded files
+backend/uploads/

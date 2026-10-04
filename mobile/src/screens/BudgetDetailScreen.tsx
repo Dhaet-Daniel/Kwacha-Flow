@@ -197,7 +197,7 @@ export default function BudgetDetailScreen({ route, navigation }: any) {
 
       <View style={styles.actionBar}>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: '#2C3E50' }]}
+          style={[styles.actionButton, { backgroundColor: '#3498DB' }]}
           onPress={() => navigation.navigate('CreateBudget', { budgetId: id })}
         >
           <Text style={styles.actionButtonText}>Edit</Text>
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   retryButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#3498DB',
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 8,

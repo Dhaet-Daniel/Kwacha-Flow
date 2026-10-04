@@ -9,6 +9,20 @@ const API_URL =
     ? process.env.EXPO_PUBLIC_API_URL_ANDROID || 'http://10.0.2.2:8000/api/v1'
     : process.env.EXPO_PUBLIC_API_URL
 
+// Turns backend-relative asset paths (e.g. /api/v1/users/avatar/<id>) into
+// absolute URLs the <Image> element can load on any platform.
+const API_ORIGIN = (() => {
+  try {
+    return new URL(API_URL).origin
+  } catch {
+    return ''
+  }
+})()
+
+export function resolveAssetUrl(url: string): string {
+  return url.startsWith('http') ? url : `${API_ORIGIN}${url}`
+}
+
 const api = axios.create({
   baseURL: API_URL,
 })
@@ -220,6 +234,30 @@ export const dashboardApi = {
 
 export const demoApi = {
   seed: () => api.post('/demo/seed'),
+}
+
+// ---------- Profile ----------
+
+export interface UserProfile {
+  id: string
+  full_name: string
+  university: string | null
+  year_of_study: number | null
+  currency: string
+  preferences: Record<string, unknown> | null
+  avatar_url?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export const profileApi = {
+  get: () => api.get<UserProfile>('/users/profile'),
+  create: (data: Partial<UserProfile>) => api.post<UserProfile>('/users/profile', data),
+  update: (data: Partial<UserProfile>) => api.put<UserProfile>('/users/profile', data),
+}
+
+export const avatarApi = {
+  upload: (form: FormData) => api.put<{ avatar_url: string }>('/users/profile/avatar', form),
 }
 
 // ---------- Savings ----------

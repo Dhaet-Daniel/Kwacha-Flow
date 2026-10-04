@@ -1,3 +1,6 @@
+import asyncio
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,13 +17,29 @@ app = FastAPI(title="Student Finance API")
 
 register_exception_handlers(app)
 
+logger = logging.getLogger("uvicorn.error")
+
 # CORS – allow all origins during development
 
-# Optional: create tables (if they don't exist)
+# Optional: create tables (if they don't exist).
+# Retried because Supabase's Supavisor pooler can intermittently fail
+# with "tenant not found" when a tenant mapping cold-starts; a fresh
+# server boot must not die on a single flap.
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    last_error: Exception | None = None
+    delays = [2, 2, 3, 3, 4, 5, 6, 8]
+    for attempt, delay in enumerate(delays, start=1):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            return
+        except Exception as exc:  # noqa: BLE001 - surface the last failure after retries
+            last_error = exc
+            logger.warning("Database connect failed (attempt %d/%d): %s", attempt, len(delays), exc)
+            await asyncio.sleep(delay)
+    if last_error:
+        raise last_error
 
 app.include_router(user_routes.router, prefix="/api/v1/users", tags=["users"])
 app.include_router(transaction_routes.router, prefix="/api/v1/transactions", tags=["transactions"])

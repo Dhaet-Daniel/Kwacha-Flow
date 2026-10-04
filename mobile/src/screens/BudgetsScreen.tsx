@@ -173,10 +173,15 @@ const styles = StyleSheet.create({
     color: '#2C3E50',
   },
   addButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#3498DB',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    shadowColor: '#2E86DE',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   addButtonText: {
     color: '#fff',

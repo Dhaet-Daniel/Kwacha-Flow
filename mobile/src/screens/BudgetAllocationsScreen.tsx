@@ -78,7 +78,7 @@ export default function BudgetAllocationsScreen({ navigation, route }: any) {
         showAlert('Success', 'Budget updated')
         navigation.pop(2)
       } else {
-        const created = await budgetApi.create({
+        await budgetApi.create({
           name,
           period,
           start_date,
@@ -87,8 +87,7 @@ export default function BudgetAllocationsScreen({ navigation, route }: any) {
           is_active: true,
         })
         showAlert('Success', 'Budget created')
-        navigation.popToTop()
-        navigation.navigate('BudgetDetail', { id: created.data.id })
+        navigation.popToTop();
       }
     } catch (e: any) {
       showAlert('Error', extractErrorDetail(e))
@@ -259,12 +258,17 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   submitButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#3498DB',
     padding: 16,
     borderRadius: 10,
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
+    shadowColor: '#2E86DE',
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   submitBar: {
     position: 'absolute',

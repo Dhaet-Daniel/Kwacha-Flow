@@ -158,7 +158,7 @@ export default function SavingsGoalDetailScreen({ route, navigation }: any) {
 
       <View style={styles.actionRow}>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: '#2C3E50' }]}
+          style={[styles.actionButton, { backgroundColor: '#3498DB' }]}
           onPress={() => navigation.navigate('CreateSavingsGoal', { goalId: id })}
         >
           <Text style={styles.actionButtonText}>Edit</Text>
@@ -234,11 +234,16 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 14, color: '#7F8C8D' },
   detailValue: { fontSize: 14, color: '#2C3E50', fontWeight: '500' },
   contributionButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#3498DB',
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 12,
+    shadowColor: '#2E86DE',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   contributionButtonText: { color: '#fff', fontWeight: '600' },
   contributionForm: { flexDirection: 'row', gap: 8, marginBottom: 12 },

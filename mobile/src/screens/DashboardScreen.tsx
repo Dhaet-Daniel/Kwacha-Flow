@@ -128,6 +128,7 @@ export default function DashboardScreen({ navigation }: any) {
   }
 
   const allSet = setupSteps.every(step => step.done)
+  const doneCount = setupSteps.filter(step => step.done).length
 
   return (
     <ScrollView
@@ -136,56 +137,6 @@ export default function DashboardScreen({ navigation }: any) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.welcome}>Welcome back! 👋</Text>
-
-      {/* Setup checklist */}
-      {!allSet && (
-        <View style={styles.checklistCard}>
-          <Text style={styles.checklistTitle}>Get started</Text>
-          {setupSteps.map(step =>
-            step.done ? (
-              <View key={step.key} style={styles.checklistRow}>
-                <Text style={styles.checkDone}>✓</Text>
-                <View style={styles.checklistInfo}>
-                  <Text style={styles.checklistLabelDone}>{step.label}</Text>
-                  <Text style={styles.checklistSubDone}>{step.sub}</Text>
-                </View>
-              </View>
-            ) : (
-              <TouchableOpacity
-                key={step.key}
-                style={styles.checklistRow}
-                onPress={() => {
-                  if (step.key === 'income') navigation.navigate('AddTransaction', { type: 'income' })
-                  if (step.key === 'budget') navigation.navigate('CreateBudget')
-                  if (step.key === 'savings') navigation.navigate('CreateSavingsGoal')
-                }}
-              >
-                <View style={styles.checkCircle}>
-                  <Text style={styles.checkCircleText}>
-                    {setupSteps.filter(s => s.done || s.key === step.key).length}
-                  </Text>
-                </View>
-                <View style={styles.checklistInfo}>
-                  <Text style={styles.checklistLabel}>{step.label}</Text>
-                  <Text style={styles.checklistSub}>{step.sub}</Text>
-                </View>
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            )
-          )}
-          {data.total_income === 0 && (
-            <TouchableOpacity
-              style={[styles.seedButton, seeding && styles.submitDisabled]}
-              onPress={handleSeed}
-              disabled={seeding}
-            >
-              <Text style={styles.seedButtonText}>
-                {seeding ? 'Seeding…' : '✨ Skip the typing — load demo data'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
 
       {/* Balance card – tap to open transactions */}
       <TouchableOpacity
@@ -216,6 +167,55 @@ export default function DashboardScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
+
+      {/* Setup checklist – remaining steps only */}
+      {!allSet && (
+        <View style={styles.checklistCard}>
+          <View style={styles.checklistHeader}>
+            <Text style={styles.checklistTitle}>Get started</Text>
+            {doneCount > 0 && (
+              <Text style={styles.checklistProgress}>
+                {doneCount} of {setupSteps.length} done
+              </Text>
+            )}
+          </View>
+          {setupSteps
+            .filter(step => !step.done)
+            .map(step => (
+              <TouchableOpacity
+                key={step.key}
+                style={styles.checklistRow}
+                onPress={() => {
+                  if (step.key === 'income') navigation.navigate('AddTransaction', { type: 'income' })
+                  if (step.key === 'budget') navigation.navigate('CreateBudget')
+                  if (step.key === 'savings') navigation.navigate('CreateSavingsGoal')
+                }}
+              >
+                <View style={styles.checkCircle}>
+                  <Text style={styles.checkCircleText}>
+                    {setupSteps.findIndex(s => s.key === step.key) + 1}
+                  </Text>
+                </View>
+                <View style={styles.checklistInfo}>
+                  <Text style={styles.checklistLabel}>{step.label}</Text>
+                  <Text style={styles.checklistSub}>{step.sub}</Text>
+                </View>
+                <Text style={styles.chevron}>›</Text>
+              </TouchableOpacity>
+            ))}
+          {data.total_income === 0 && (
+            <TouchableOpacity
+              style={[styles.seedButton, seeding && styles.submitDisabled]}
+              onPress={handleSeed}
+              disabled={seeding}
+            >
+              <Text style={styles.seedButtonText}>
+                {seeding ? 'Seeding…' : '✨ Skip the typing — load demo data'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {data.budget_health.length > 0 && (
         <View style={styles.section}>
@@ -342,6 +342,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8ECF0',
   },
+  checklistHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  checklistProgress: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3498DB',
+  },
   checklistTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -406,14 +416,16 @@ const styles = StyleSheet.create({
     color: '#A4B0BE',
   },
   seedButton: {
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F0F7FE',
     borderRadius: 10,
     padding: 12,
     alignItems: 'center',
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#3498DB',
   },
   seedButtonText: {
-    color: '#2C3E50',
+    color: '#3498DB',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -567,10 +579,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   retryButton: {
-    backgroundColor: '#2C3E50',
+    backgroundColor: '#3498DB',
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 8,
+    shadowColor: '#2E86DE',
+    shadowOpacity: 0.35,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   retryButtonText: {
     color: '#fff',

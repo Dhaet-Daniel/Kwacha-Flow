@@ -16,6 +16,7 @@ class UserProfileResponse(UserProfileBase):
     # SQLAlchemy returns this primary key as a UUID instance. FastAPI serializes
     # UUID values to strings in the JSON sent to the mobile client.
     id: UUID
+    avatar_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
